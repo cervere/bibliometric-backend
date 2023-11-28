@@ -60,3 +60,36 @@
             author_${position}_institution_${field}
         ```
         - If multiple values for a given author, concat with `|`
+
+    > Validation for all the above :
+    `GET https://API_SERVER/pubs-sample should return`
+
+    ```json
+{
+    "data": [
+        {
+            "id": "https://openalex.org/W4365791186",
+            "title": "Mesenchymal stem cell-derived extracellular vesicles as a cell-free therapy for traumatic brain injury via neuroprotection and neurorestoration",
+            "publication_date": "2024-01-01",
+            "id_openalex": "https://openalex.org/W4365791186",
+            "id_doi": "https://doi.org/10.4103/1673-5374.374143",
+            "id_pmid": "https://pubmed.ncbi.nlm.nih.gov/37488843",
+            "author_first_id": "https://openalex.org/A5049580087",
+            "author_first_display_name": "Yue Xiong",
+            "author_first_orcid": "https://orcid.org/0000-0003-2744-6566",
+            "author_first_raw_affiliation_string": "Department of Neurosurgery, Henry Ford Hospital, Detroit, MI, USA",
+            "author_first_institution_id": "https://openalex.org/I2803043754",
+            "author_first_institution_display_name": "Henry Ford Hospital",
+            "author_first_institution_type": "healthcare",
+            "author_last_id": "https://openalex.org/A5005508444",
+            "author_last_display_name": "Michael Chopp",
+            "author_last_orcid": "https://orcid.org/0000-0002-1948-4493",
+            "author_last_raw_affiliation_string": "Department of Neurology, Henry Ford Hospital, Detroit, MI, USA; Department of Physics, Oakland University, Rochester, MI, USA",
+            "author_last_institution_id": "https://openalex.org/I2803043754;https://openalex.org/I177721651",
+            "author_last_institution_display_name": "Henry Ford Hospital;Oakland University",
+            "author_last_institution_type": "healthcare;education"
+        },
+        ...
+    ],
+message: "Status is success, but timestamp is within a week." //similar status about recency
+    ```
