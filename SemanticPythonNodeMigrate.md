@@ -1,5 +1,6 @@
 # Plan to migrate PyAlex to Node OpenAlex
 
+## OpenAlex Publication Data : Raw, then Simplify
  - [x] prepare the base openalex api with required filters
     ```js
     https://api.openalex.org/works?filter=from_publication_date:2013-01-01,
@@ -62,7 +63,7 @@
         - If multiple values for a given author, concat with `|`
 
     > Validation for all the above :
-    `GET https://API_SERVER/pubs-sample should return`
+    `GET https://API_SERVER/pubs-sample` should return:
 
     ```json
     {
@@ -94,3 +95,11 @@
     "message": "Status is success, but timestamp is within a week." //similar status about recency
     }
     ```
+
+ ## Manually collected Faculty, Fellow, Residents data - Google Sheets
+
+  - OLD: Current code, sheet name `all_fac_fel_res`
+  - NEW: New sheet, each of `Faculty`, `Fellow`, `Resident` is a different sheet
+    - [ ] TODO: Migrate OLD to NEW. For now, use the output of OLD as it is provides the fields needed
+
+
