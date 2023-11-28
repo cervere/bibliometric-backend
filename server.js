@@ -2,12 +2,17 @@
 // where your node app starts
 
 // init project
-const express = require("express");
-const cors = require("cors");
+import express from "express";
+import cors from "cors";
 const app = express();
-const axios = require("axios")
-const NodeCache = require('node-cache');
+import axios from "axios";
+import NodeCache from 'node-cache';
+import { writeFile } from 'fs/promises';
 
+import {updateBasePublications, fetchRawPublicationDownloadStatus, saveSimplifiedPublications,
+  fetchAllPublications} from './external/openalex/base.js'
+import {getRawPublicationData} from './models/publication.js';
+import {getManualIndividualData} from './external/g-sheets/base.js';
 // we've started you off with Express,
 // but feel free to use whatever libs or frameworks you'd like through `package.json`.
 
@@ -51,6 +56,17 @@ const result = data.reduce((acc, curr) => {
 }, {});
   return result;
 }
+
+app.get("/pind", async (req, res) => {
+  const result = await getManualIndividualData();
+  console.log('Saving raw data, just in case...');
+  const jsonData = JSON.stringify(result, null, 4);
+  writeFile('./.data/individuals.json', jsonData)
+  .then(() => {
+    console.log("Downloaded individuals data from google sheets is saved in a file")
+  })
+  res.status(200).send(result);
+})
 
 app.get("/programs", async function(request, response) {
     const SHEET_ID = '1poacmUT_2TM00nZ8agOIZFP_dILEd_LLoZbqjOkWFqE';
@@ -166,6 +182,24 @@ const getPaperCitationCountsByDOI = async (dois) => {
 
 }
 
+app.get('/pubs',  (req, res) => {
+  res.send(updateBasePublications());
+})
+
+app.get('/pubs-sample',  async (req, res) => {
+  const result = await fetchAllPublications();
+  res.send(result);
+})
+
+app.get('/simplify-pubs',  (req, res) => {
+  const rawDataRecent = fetchRawPublicationDownloadStatus();
+  if(rawDataRecent) {
+    const publications = getRawPublicationData();
+    res.send(saveSimplifiedPublications(publications));
+  } else {
+    res.send({message: 'Raw publications data need to be updated! Please request /pubs with necessary authentication!'});
+  }
+})
 
 app.post('/semantic-pubs', async (req, res) => {
   console.log(`In Queue ${failedDOIs.size} DOIs`)
@@ -199,6 +233,6 @@ app.post('/semantic-pubs', async (req, res) => {
 
 
 // listen for requests :)
-const listener = app.listen(process.env.PORT, function() {
+const listener = app.listen(process.env.PORT || 3000, function() {
   console.log("Your app is listening on port " + listener.address().port);
 });

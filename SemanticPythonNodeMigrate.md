@@ -1,6 +1,6 @@
 # Plan to migrate PyAlex to Node OpenAlex
 
- - [ ] prepare the base openalex api with required filters
+ - [x] prepare the base openalex api with required filters
     ```js
     https://api.openalex.org/works?filter=from_publication_date:2013-01-01,
                 authorships.institutions.country_code:US,
@@ -10,18 +10,18 @@
                 &sort=publication_year:desc
                 &per-page=200
     ```
- - [ ] Call the above api as many times as a valid cursor (`response.meta.next_cursor`) is returned in the response, using it for the next call.
+ - [x] Call the above api as many times as a valid cursor (`response.meta.next_cursor`) is returned in the response, using it for the next call.
     - First call: `base_url&cursor=*`
- - [ ] Decide if you want to save the above results into a file
- - [ ] Extract new fields for convenience
-    - [ ] Identifier fields
+ - [x] Decide if you want to save the above results into a file
+ - [x] Extract new fields for convenience
+    - [x] Identifier fields
         ```js
         response.ids : {'openalex': 'https://openalex.org/W4306730981',
                     'doi': 'https://doi.org/10.4103/1673-5374.355749',
                     'pmid': 'https://pubmed.ncbi.nlm.nih.gov/36254972'
                     }
         ```
-    - [ ] Primary Location (`depricated` : `host_venue`)
+    - [x] Primary Location (`depricated` : `host_venue`)
         ```js
         response.primary_location : { ...
         'source': {
@@ -34,7 +34,7 @@
         },
         }
         ```
-    - [ ] Authorships 
+    - [x] Authorships 
         ```js
         [
             {
