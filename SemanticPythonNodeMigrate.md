@@ -101,5 +101,27 @@
   - OLD: Current code, sheet name `all_fac_fel_res`
   - NEW: New sheet, each of `Faculty`, `Fellow`, `Resident` is a different sheet
     - [ ] TODO: Migrate OLD to NEW. For now, use the output of OLD as it is provides the fields needed
+  - [x] Check if the ranks are standardized
+  - [x] Check if the duplicates are resolved
+    - [x] Special resolving rules for `edu level` and `PGY_#` (choose faculty > fellow > resident and max PGY)
+    - [x] Rest all - `|` separated concatenation
+  - [ ] Estimate year of graduation for residents
 
+## Manually collected Program data
+  - [x] Old data file for main joining with individuals:
+    - [x] AAMC sheet
+    - [x] Residency Explorer sheet
+  - [x] More recent google sheet with lot more data points
+    - mostly used in the tool for export than preprocessing
+  - [ ] Combine excel sheet to have all program sheets at one place
+  - Refactor program code all in one place for easier modifications later
+
+## Join Individuals and Program data
+  - [x] Join Individuals and programs, at least to replicate the python version
+
+## Join Publication data with Individuals and Program Data
+ - [ ] Define match - strict and loose
+ - [ ] Extract first author matches
+ - [ ] Extract last author matches
+ - [ ] Combine all pubs with either first or last author matches
 

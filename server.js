@@ -12,9 +12,13 @@ import { writeFile } from 'fs/promises';
 import {updateBasePublications, fetchRawPublicationDownloadStatus, saveSimplifiedPublications,
   fetchAllPublications} from './external/openalex/base.js'
 import {getRawPublicationData} from './models/publication.js';
-import {getManualIndividualData} from './external/g-sheets/base.js';
+import {getManualIndividualData, getIndividualData, getManualProgramData} from './external/g-sheets/base.js';
 // we've started you off with Express,
 // but feel free to use whatever libs or frameworks you'd like through `package.json`.
+import {identifyDuplicates, resolveDuplicates} from './external/g-sheets/base.js';
+import {getAAMCProgramData, getResidencyExplorerProgramData} from './external/g-sheets/base.js';
+import {combineAAMCandREProgramData, getIndividualsWithProgramData} from './external/models/individuals-with-programs.js';
+
 
 // http://expressjs.com/en/starter/static-files.html
 app.use(cors());
@@ -38,54 +42,94 @@ app.post("/save", function(request, response) {
   response.status(200).send({'message' : 'Received ' + title});
 });
 
-const getDataObj = (data) => {
-  const columns = data.shift(); // remove the first element and store it in a variable
 
-const result = data.reduce((acc, curr) => {
-  const obj = {};
-  columns.forEach((column, index) => {
-    if(column) {
-    obj[column.trim().replace(/-/g, '_')] = curr[index];
-    }
-  });
-  const programId = obj.program_id?.split(':')[1]?.trim();
-  if(programId) {
-    acc[programId] = obj    
+
+app.get("/duplicateInds", async (req, res) => {
+  // This service is for debugging
+  const { debug } = req.query
+  const result = await getManualIndividualData();
+  const individuals = identifyDuplicates(result, 'fullname')
+  const resolvedIndividuals = resolveDuplicates(individuals.duplicateInds);
+  console.log(debug)
+  if(debug === '1') {
+    const dupes = individuals.duplicateInds.map((entry) => entry.entries);
+    dupes.forEach((dupe, i) => dupe.push(resolvedIndividuals[i]))
+    res.status(200).send(dupes);
+  } else {
+    res.status(200).send(resolvedIndividuals);
   }
-  return acc;
-}, {});
-  return result;
-}
+})
 
 app.get("/pind", async (req, res) => {
-  const result = await getManualIndividualData();
+  const result = await getIndividualData();
+  const resultWithMeta = {
+    count: result.length,
+    updateAt: new Date(),
+    data: result.slice()
+  }
   console.log('Saving raw data, just in case...');
-  const jsonData = JSON.stringify(result, null, 4);
+  const jsonData = JSON.stringify(resultWithMeta, null, 4);
   writeFile('./.data/individuals.json', jsonData)
   .then(() => {
     console.log("Downloaded individuals data from google sheets is saved in a file")
   })
-  res.status(200).send(result);
+  res.status(200).send(resultWithMeta);
 })
 
-app.get("/programs", async function(request, response) {
-    const SHEET_ID = '1poacmUT_2TM00nZ8agOIZFP_dILEd_LLoZbqjOkWFqE';
-    const DATA_SHEET_NAME = 'program-full'
-    const API_KEY = 'AIzaSyCKYp7lfxQqmLUD065YuziyDSuSm2n2zz0';
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${DATA_SHEET_NAME}`;
-
-    const res = await axios.get(url, {
-      params: {
-        key: API_KEY
-      }
-    })
-    .catch(error => {
-      console.error(error);
-    });
-  if(res) {
-    response.status(200).send(getDataObj(res.data.values));
+app.get("/aamc", async function(request, response) {
+  const aamcRes = await getAAMCProgramData();
+  if(aamcRes.failed) {
+    response.status(404).send({message: 'Failed'});
   } else {
-    response.status(404).send({message: 'Forbidden'});
+    response.status(200).send(aamcRes);
+  }
+})
+
+app.get("/resi", async function(request, response) {
+  const aamcRes = await getResidencyExplorerProgramData();
+  if(aamcRes.failed) {
+    response.status(404).send({message: 'Failed'});
+  } else {
+    response.status(200).send(aamcRes);
+  }
+})
+
+app.get("/aamcresi", async function(request, response) {
+  const aamcRes = await combineAAMCandREProgramData();
+  if(aamcRes.failed) {
+    response.status(404).send({message: 'Failed'});
+  } else {
+    response.status(200).send(aamcRes);
+  }
+})
+
+app.get("/indpro", async function(request, response) {
+  const aamcRes = await getIndividualsWithProgramData();
+  if(aamcRes.failed) {
+    response.status(404).send({message: 'Failed'});
+  } else {
+    response.status(200).send(aamcRes);
+  }
+})
+
+
+app.get("/programs", async function(request, response) {
+  const programsRes = await getManualProgramData();
+  if(programsRes.failed) {
+    response.status(404).send({message: 'Failed'});
+  } else {
+    const programsWithMeta = {
+      count: Object.keys(programsRes).length,
+      updatedAt: new Date(),
+      data: programsRes
+    }
+    console.log('Saving raw data, just in case...');
+    const jsonData = JSON.stringify(programsWithMeta, null, 4);
+    writeFile('./.data/programs.json', jsonData)
+    .then(() => {
+      console.log("Downloaded programs data from google sheets is saved in a file")
+    })
+    response.status(200).send(programsWithMeta);
   }
 })
 
