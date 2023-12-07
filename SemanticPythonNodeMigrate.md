@@ -105,7 +105,7 @@
   - [x] Check if the duplicates are resolved
     - [x] Special resolving rules for `edu level` and `PGY_#` (choose faculty > fellow > resident and max PGY)
     - [x] Rest all - `|` separated concatenation
-  - [ ] Estimate year of graduation for residents
+  - [x] Estimate year of graduation for residents
 
 ## Manually collected Program data
   - [x] Old data file for main joining with individuals:
@@ -114,7 +114,7 @@
   - [x] More recent google sheet with lot more data points
     - mostly used in the tool for export than preprocessing
   - [ ] Combine excel sheet to have all program sheets at one place
-  - Refactor program code all in one place for easier modifications later
+  - [ ] Refactor program code all in one place for easier modifications later
 
 ## Join Individuals and Program data
   - [x] Join Individuals and programs, at least to replicate the python version

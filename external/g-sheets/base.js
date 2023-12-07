@@ -81,7 +81,8 @@ const getIndividualDataObj = (data) => {
     simpleObj['fullname'] = `${simpleObj["first name"]}${middle}${simpleObj["last name"]}`
     const pgyNum = Number(simpleObj["PGY_#"])
     const pgy = (isNaN(pgyNum) || pgyNum > 9) ? -1 : pgyNum;
-    simpleObj['PGY_#'] = pgy; 
+    simpleObj['PGY_#'] = pgy;
+    simpleObj["estimatedYOG"] = estimatedYOG(pgy) 
     acc.push(simpleObj);
     // const programName = obj.program_name?.trim();
     // if(programName) {
@@ -94,6 +95,16 @@ const getIndividualDataObj = (data) => {
     return result;
 }
 
+const estimatedYOG = (pgy) => {
+  if (pgy > 0 && pgy < 10)  {
+      const currentYear = new Date().getFullYear();
+      const yearsToSubtract = pgy + 1;
+      const estimatedYOG = currentYear - yearsToSubtract;
+      return estimatedYOG;
+  } else {
+      return -1;
+  }
+}
 export const identifyDuplicates = (arr, field) => {
     const count = arr.reduce((acc, obj) => {
         const key = obj[field];
