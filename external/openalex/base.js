@@ -73,32 +73,24 @@ const getPubs = async (cursor) => {
 }
 
 export const fetchAllPublications = async () => {
-  const statusJSON = readFileSync('./.data/status.json', 'utf8');
-  const status = JSON.parse(statusJSON);
-
+  const rawPublicationDownloadStatus = await fetchRawPublicationDownloadStatus();
   let message = '';
-  // Check if the status is 'success'
-  if (status.success) {
-    const timestamp = new Date(status.timestamp);
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-    // Check if the timestamp is older than a week
-    console.log(timestamp, oneWeekAgo)
-    if (timestamp < oneWeekAgo) {
+  if (rawPublicationDownloadStatus.success && !isTimestampWeekAgo(rawPublicationDownloadStatus.timestamp)) {
+    message = 'Status is success, but timestamp is within a week.';
+  } else {
+    if (rawPublicationDownloadStatus.success) {
       message = 'Status is success, and timestamp is older than a week.';
     } else {
-      message = 'Status is success, but timestamp is within a week.';
+      message = 'Status is a failure.';
     }
-  } else {
-    message = 'Status is a failure.';
   }
 
   const simplifiedPubsJSON = readFileSync('./.data/simplifieddata.json', 'utf8');
   const simplifiedPubs = JSON.parse(simplifiedPubsJSON);
 
   if (simplifiedPubs) {
-    return { data: simplifiedPubs.slice(), message }
+    return { data: simplifiedPubs.slice(100), message }
   } else {
     return { data: [], message, failed: true }
   }
@@ -132,28 +124,20 @@ export const fetchAllPublicationsFromSemantic = async () => {
   return publications;
 }
 
+export const isTimestampWeekAgo = (timestamp) => {
+  const givenDate = new Date(timestamp);
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+  return givenDate < oneWeekAgo
+}
+
 export const fetchRawPublicationDownloadStatus = () => {
   // Read the status JSON from the file
   const statusJSON = readFileSync('./.data/status.json', 'utf8');
   const status = JSON.parse(statusJSON);
 
-  // Check if the status is 'success'
-  if (status.success) {
-    const timestamp = new Date(status.timestamp);
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-
-    // Check if the timestamp is older than a week
-    if (timestamp < oneWeekAgo) {
-      console.error('Raw download older than a week. Please update the raw data first.')
-      return false;
-    } else {
-      return true;
-    }
-  } else {
-    console.error('Failure finding the status file of Raw download. Please update the raw data first.')
-    return false;
-  }
+  return status;
 }
 
 

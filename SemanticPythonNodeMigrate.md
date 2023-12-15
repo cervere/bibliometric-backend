@@ -120,8 +120,8 @@
   - [x] Join Individuals and programs, at least to replicate the python version
 
 ## Join Publication data with Individuals and Program Data
- - [ ] Define match - strict and loose
- - [ ] Extract first author matches
- - [ ] Extract last author matches
- - [ ] Combine all pubs with either first or last author matches
+ - [x] Define match - strict and loose
+ - [x] Extract first author matches
+ - [x] Extract last author matches
+ - [x] Combine all pubs with either first or last author matches
 

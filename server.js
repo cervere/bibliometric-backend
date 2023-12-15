@@ -11,7 +11,7 @@ import { writeFile } from 'fs/promises';
 
 import {
   updateBasePublications, fetchRawPublicationDownloadStatus, saveSimplifiedPublications,
-  fetchAllPublications
+  fetchAllPublications, isTimestampWeekAgo
 } from './external/openalex/base.js'
 import { getRawPublicationData } from './models/publication.js';
 import { getManualIndividualData, getIndividualData, getManualProgramData } from './external/g-sheets/base.js';
@@ -264,24 +264,54 @@ app.get('/pubs-sample', async (req, res) => {
 })
 
 app.get('/pub-ind-pro', async (req, res) => {
-
-  const result = await combinePublicationsIndividualsAndPrograms();
-
-  if (result.failed) {
-    res.status(404).send({ message: 'Failed' });
+  console.log('Checking the status of raw publication data download from OpenAlex...');
+  const rawPublicationDownloadStatus = await fetchRawPublicationDownloadStatus();
+  const messages = [];
+  let initiateFreshPublicationDownload = false;
+  if (rawPublicationDownloadStatus.success && !isTimestampWeekAgo(rawPublicationDownloadStatus.timestamp)) {
+    console.log("Publications data recently updated.");
   } else {
+    if (rawPublicationDownloadStatus.success) {
+      messages.push("Publication data is more than a week old.")
+    } else {
+      messages.push("Latest publication data download status from OpenAlex was not found!!");
+    }
+    initiateFreshPublicationDownload = true;
+    messages.push("Starting a fresh download now! Please try again in an hour for the most recent data!")
+  }
+
+  /**
+   * 1. Check the recency of the downloaded publication data
+   * 2. If within a week, no message to add
+   * 3. Else: 
+   *  3.1. start the async pipeline that downloads raw data and stores simplifieddata
+   *  3.2. append a disclaimer about this included in the response
+   * 4. In both cases, simply load available simplifieddata.json
+   * 5. If either of status file or simplifieddata.json is not available, 
+   *    then it is a problem. Send a 404, bring it to the attention of devs
+   */
+  try {
+    const result = await combinePublicationsIndividualsAndPrograms();
     const resultWithMeta = {
+      someData: true,
       count: Object.keys(result).length,
-      updateAt: new Date(),
-      data: result
+      updateAt: rawPublicationDownloadStatus.success ? new Date(rawPublicationDownloadStatus.timestamp) : new Date(),
+      data: result,
+      message: messages
+    }
+    if (initiateFreshPublicationDownload) {
+      updateBasePublications();
     }
     res.status(200).send(resultWithMeta);
+  } catch (err) {
+    res.status(404).send({ message: ["Unexpected error while loading publications. Please inform support and try again later!"] })
   }
+
 })
 
 app.get('/simplify-pubs', (req, res) => {
-  const rawDataRecent = fetchRawPublicationDownloadStatus();
-  if (rawDataRecent) {
+  const rawDataDownloadStatus = fetchRawPublicationDownloadStatus();
+  if (rawDataDownloadStatus.success && !isTimestampWeekAgo(rawDataDownloadStatus.timestamp)) {
     const publications = getRawPublicationData();
     res.send(saveSimplifiedPublications(publications));
   } else {
