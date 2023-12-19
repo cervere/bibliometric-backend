@@ -1,5 +1,6 @@
 import axios from "axios";
 import { writeFileSync } from 'fs';
+import { backupAndWriteFile } from "../../utils/file-utils.js";
 
 // Function to get counts by grouping values of a key 'k'
 export function getCountsByGrouping(arr, key) {
@@ -181,9 +182,10 @@ export const getIndividuals = async () => {
     updateAt: new Date(),
     data: result.slice()
   }
-  console.log('Saving raw data, just in case...');
+  console.log('Saving raw individual data, just in case...');
   const jsonData = JSON.stringify(resultWithMeta, null, 4);
-  writeFileSync('./.data/individuals.json', jsonData);
+  // writeFileSync('./.data/individuals.json', jsonData);
+  backupAndWriteFile('./.data/individuals.json', jsonData);
   console.log("Downloaded individuals data from google sheets is saved in a file")
   return resultWithMeta;
 }
@@ -287,9 +289,10 @@ export const getProgramData = async () => {
       updatedAt: new Date(),
       data: programsRes
     }
-    console.log('Saving raw data, just in case...');
+    console.log('Saving raw program data, just in case...');
     const jsonData = JSON.stringify(programsWithMeta, null, 4);
-    writeFileSync('./.data/programs.json', jsonData);
+    // writeFileSync('./.data/programs.json', jsonData);
+    backupAndWriteFile('./.data/programs.json', jsonData)
     console.log("Downloaded programs data from google sheets is saved in a file")
     return programsWithMeta;
   }

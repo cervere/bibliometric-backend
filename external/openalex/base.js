@@ -3,6 +3,7 @@ import { writeFile } from 'fs/promises';
 import { readFileSync, writeFileSync } from 'fs';
 import { collapseIds, collapseAuthorFields, collapseHostVenue, collapseConcepts } from "./utils.js";
 import { getIndividuals, getProgramData } from "../g-sheets/base.js";
+import { backupAndWriteFile } from "../../utils/file-utils.js";
 
 
 const BASE_URL = 'https://api.openalex.org/works';
@@ -151,7 +152,8 @@ export const saveSimplifiedPublications = async (pubs) => {
   const simplifiedPublications = pubs.map((pub) => simplifyPubStructure(pub));
   const jsonData = JSON.stringify(simplifiedPublications, null, 4);
   try {
-    writeFileSync('./.data/simplifieddata.json', jsonData)
+    backupAndWriteFile('./.data/simplifieddata.json', jsonData);
+    // writeFileSync('./.data/simplifieddata.json', jsonData)
     console.log('Writing simplified JSON to file was successful.');
   } catch (err) {
     console.error('Error writing simplified data:', err);
@@ -160,7 +162,9 @@ export const saveSimplifiedPublications = async (pubs) => {
 }
 
 export const updateBasePublications = () => {
-  const saveRawData = false
+  const saveRawData = false // Ideally, we could save the raw data as received from Sem. Sch. 
+  // But the free server Glitch we're using to host, has a memory limit of 512MB. So saving rawdata has been difficult.
+  // So this flag can be handled appropriately when there are no memory constraints.
   fetchAllPublicationsFromSemantic().then((pubs) => {
     saveSimplifiedPublications(pubs)
       .then(async () => {
@@ -168,7 +172,7 @@ export const updateBasePublications = () => {
         await getIndividuals();
         writeStatus(true, 'Writing simplified publication data JSON to file was successful.')
         if (saveRawData) {
-          console.log('Saving raw data, just in case...');
+          console.log('Saving raw publication data, just in case...');
           const jsonData = JSON.stringify(pubs, null, 4);
           writeFile('./.data/rawdata.json', jsonData)
             .then(() => {
@@ -196,8 +200,9 @@ const writeStatus = (success, message) => {
     message
   }, null, 2);
   // Write the JSON string to a file
-  writeFile('./.data/status.json', statusJSON)
-    .catch((err) => {
-      console.error("Error writing status file", err);
-    })
+  try {
+    backupAndWriteFile('./.data/status.json', statusJSON)
+  } catch (err) {
+    console.error("Error writing status file", err);
+  }
 }
