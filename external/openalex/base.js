@@ -5,7 +5,6 @@ import { collapseIds, collapseAuthorFields, collapseHostVenue, collapseConcepts 
 import { getIndividuals, getProgramData } from "../g-sheets/base.js";
 
 
-
 const BASE_URL = 'https://api.openalex.org/works';
 const PUBS_PER_PAGE = 200;
 
@@ -151,46 +150,36 @@ export const saveSimplifiedPublications = async (pubs) => {
   console.log('Preparing simplified data structure for storage');
   const simplifiedPublications = pubs.map((pub) => simplifyPubStructure(pub));
   const jsonData = JSON.stringify(simplifiedPublications, null, 4);
-  writeFile('./.data/simplifieddata.json', jsonData)
-    .then(() => {
-      console.log('Writing simplified JSON to file was successful.');
-    })
-    .catch((err) => {
-      console.error('Error writing simplified data:', err);
-    });
-  return { message: 'Publications simplification is in progress. Please check back later !!' }
-}
-
-export const saveSimplifiedPublicationsSync = async (pubs) => {
-  console.log('Preparing simplified data structure for storage');
-  const simplifiedPublications = pubs.map((pub) => simplifyPubStructure(pub));
-  const jsonData = JSON.stringify(simplifiedPublications, null, 4);
   try {
     writeFileSync('./.data/simplifieddata.json', jsonData)
     console.log('Writing simplified JSON to file was successful.');
   } catch (err) {
     console.error('Error writing simplified data:', err);
   };
+  return { message: 'Publications simplification is in progress. Please check back later !!' }
 }
 
 export const updateBasePublications = () => {
+  const saveRawData = false
   fetchAllPublicationsFromSemantic().then((pubs) => {
     saveSimplifiedPublications(pubs)
       .then(async () => {
         await getProgramData();
         await getIndividuals();
         writeStatus(true, 'Writing simplified publication data JSON to file was successful.')
-        console.log('Saving raw data, just in case...');
-        const jsonData = JSON.stringify(pubs, null, 4);
-        writeFile('./.data/rawdata.json', jsonData)
-          .then(() => {
-            console.log('Writing JSON to file was successful.');
-            writeStatus(true, 'Writing raw data JSON to file was successful.')
-          })
-          .catch((err) => {
-            console.error('Error writing file:', err);
-            writeStatus(false, 'Error writing raw data JSON to file.')
-          });
+        if (saveRawData) {
+          console.log('Saving raw data, just in case...');
+          const jsonData = JSON.stringify(pubs, null, 4);
+          writeFile('./.data/rawdata.json', jsonData)
+            .then(() => {
+              console.log('Writing JSON to file was successful.');
+              writeStatus(true, 'Writing raw data JSON to file was successful.')
+            })
+            .catch((err) => {
+              console.error('Error writing file:', err);
+              writeStatus(false, 'Error writing raw data JSON to file.')
+            });
+        }
       })
       .catch((err) => {
         console.error("Error simplifying data...", err);

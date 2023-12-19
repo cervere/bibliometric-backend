@@ -14,7 +14,7 @@ import {
   fetchAllPublications, isTimestampWeekAgo
 } from './external/openalex/base.js'
 import { getRawPublicationData } from './models/publication.js';
-import { getManualIndividualData, getIndividuals, getProgramData } from './external/g-sheets/base.js';
+import { getManualIndividualData, getIndividualData, getManualProgramData } from './external/g-sheets/base.js';
 // we've started you off with Express,
 // but feel free to use whatever libs or frameworks you'd like through `package.json`.
 import { identifyDuplicates, resolveDuplicates } from './external/g-sheets/base.js';
@@ -22,7 +22,10 @@ import { getAAMCProgramData, getResidencyExplorerProgramData } from './external/
 import { combineAAMCandREProgramData, getIndividualsWithProgramData } from './external/models/individuals-with-programs.js';
 import { combinePublicationsIndividualsAndPrograms } from './external/models/combine-pub-ind-pro.js';
 import { getDoximityNames } from './external/doximity/loadDoximityNames.js';
-
+import path from 'path';
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // http://expressjs.com/en/starter/static-files.html
 app.use(cors());
@@ -75,7 +78,18 @@ app.get('/doxind', async (req, res) => {
 })
 
 app.get("/pind", async (req, res) => {
-  const resultWithMeta = await getIndividuals();
+  const result = await getIndividualData();
+  const resultWithMeta = {
+    count: result.length,
+    updateAt: new Date(),
+    data: result.slice()
+  }
+  console.log('Saving raw data, just in case...');
+  const jsonData = JSON.stringify(resultWithMeta, null, 4);
+  writeFile('./.data/individuals.json', jsonData)
+    .then(() => {
+      console.log("Downloaded individuals data from google sheets is saved in a file")
+    })
   res.status(200).send(resultWithMeta);
 })
 
@@ -122,10 +136,21 @@ app.get("/indpro", async function (request, response) {
 
 
 app.get("/programs", async function (request, response) {
-  const programsWithMeta = await getProgramData();
-  if (programsWithMeta.failed) {
+  const programsRes = await getManualProgramData();
+  if (programsRes.failed) {
     response.status(404).send({ message: 'Failed' });
   } else {
+    const programsWithMeta = {
+      count: Object.keys(programsRes).length,
+      updatedAt: new Date(),
+      data: programsRes
+    }
+    console.log('Saving raw data, just in case...');
+    const jsonData = JSON.stringify(programsWithMeta, null, 4);
+    writeFile('./.data/programs.json', jsonData)
+      .then(() => {
+        console.log("Downloaded programs data from google sheets is saved in a file")
+      })
     response.status(200).send(programsWithMeta);
   }
 })
@@ -282,7 +307,10 @@ app.get('/pub-ind-pro', async (req, res) => {
     }
     res.status(200).send(resultWithMeta);
   } catch (err) {
-    res.status(404).send({ message: ["Unexpected error while loading publications. Please inform support and try again later!"] })
+    console.log(err);
+    updateBasePublications();
+    messages.push("Unexpected error while loading publications. Please inform support and try again later!")
+    res.status(404).send({ message: messages })
   }
 
 })
