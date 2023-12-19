@@ -8,5 +8,8 @@ export const backupAndWriteFile = (filePath, data) => {
 
         readStream.pipe(writeStream); // Create a backup using streams
     }
-    writeFileSync(filePath, data); // Write the new file
+    const writeStream = createWriteStream(filePath);
+    writeStream.write(data, 'utf8');
+    writeStream.end();
+    // writeFileSync(filePath, data); // Write the new file
 }
