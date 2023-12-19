@@ -1,7 +1,8 @@
 import axios from "axios";
 import { writeFile } from 'fs/promises';
-import { readFileSync } from 'fs';
+import { readFileSync, writeFileSync } from 'fs';
 import { collapseIds, collapseAuthorFields, collapseHostVenue, collapseConcepts } from "./utils.js";
+import { getIndividuals, getProgramData } from "../g-sheets/base.js";
 
 
 
@@ -134,10 +135,15 @@ export const isTimestampWeekAgo = (timestamp) => {
 
 export const fetchRawPublicationDownloadStatus = () => {
   // Read the status JSON from the file
-  const statusJSON = readFileSync('./.data/status.json', 'utf8');
-  const status = JSON.parse(statusJSON);
+  try {
+    const statusJSON = readFileSync('./.data/status.json', 'utf8');
+    const status = JSON.parse(statusJSON);
 
-  return status;
+    return status;
+  } catch (err) {
+    console.log(err)
+    return { success: false }
+  }
 }
 
 
@@ -155,34 +161,54 @@ export const saveSimplifiedPublications = async (pubs) => {
   return { message: 'Publications simplification is in progress. Please check back later !!' }
 }
 
+export const saveSimplifiedPublicationsSync = async (pubs) => {
+  console.log('Preparing simplified data structure for storage');
+  const simplifiedPublications = pubs.map((pub) => simplifyPubStructure(pub));
+  const jsonData = JSON.stringify(simplifiedPublications, null, 4);
+  try {
+    writeFileSync('./.data/simplifieddata.json', jsonData)
+    console.log('Writing simplified JSON to file was successful.');
+  } catch (err) {
+    console.error('Error writing simplified data:', err);
+  };
+}
+
 export const updateBasePublications = () => {
   fetchAllPublicationsFromSemantic().then((pubs) => {
     saveSimplifiedPublications(pubs)
-      .catch((err) => {
-        console.error("Error simplifying data...", err)
-      });
-    console.log('Saving raw data, just in case...');
-    const jsonData = JSON.stringify(pubs, null, 4);
-    writeFile('./.data/rawdata.json', jsonData)
-      .then(() => {
-        console.log('Writing JSON to file was successful.');
-        const status = {
-          success: true,
-          timestamp: new Date().toISOString(),
-          message: 'Writing raw data JSON to file was successful.'
-        };
-
-        // Convert the status object to a JSON string
-        const statusJSON = JSON.stringify(status, null, 2);
-        // Write the JSON string to a file
-        writeFile('./.data/status.json', statusJSON)
-          .catch((err) => {
-            console.error("Error writing status file", err);
+      .then(async () => {
+        await getProgramData();
+        await getIndividuals();
+        writeStatus(true, 'Writing simplified publication data JSON to file was successful.')
+        console.log('Saving raw data, just in case...');
+        const jsonData = JSON.stringify(pubs, null, 4);
+        writeFile('./.data/rawdata.json', jsonData)
+          .then(() => {
+            console.log('Writing JSON to file was successful.');
+            writeStatus(true, 'Writing raw data JSON to file was successful.')
           })
+          .catch((err) => {
+            console.error('Error writing file:', err);
+            writeStatus(false, 'Error writing raw data JSON to file.')
+          });
       })
       .catch((err) => {
-        console.error('Error writing file:', err);
+        console.error("Error simplifying data...", err);
+        writeStatus(false, 'Error writing simplified publication data JSON to file.')
       });
   });
   return { message: 'Publications download is in progress. Please check back later !!' }
-} 
+}
+
+const writeStatus = (success, message) => {
+  const statusJSON = JSON.stringify({
+    success,
+    timestamp: new Date().toISOString(),
+    message
+  }, null, 2);
+  // Write the JSON string to a file
+  writeFile('./.data/status.json', statusJSON)
+    .catch((err) => {
+      console.error("Error writing status file", err);
+    })
+}

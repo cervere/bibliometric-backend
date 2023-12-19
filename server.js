@@ -14,7 +14,7 @@ import {
   fetchAllPublications, isTimestampWeekAgo
 } from './external/openalex/base.js'
 import { getRawPublicationData } from './models/publication.js';
-import { getManualIndividualData, getIndividualData, getManualProgramData } from './external/g-sheets/base.js';
+import { getManualIndividualData, getIndividuals, getProgramData } from './external/g-sheets/base.js';
 // we've started you off with Express,
 // but feel free to use whatever libs or frameworks you'd like through `package.json`.
 import { identifyDuplicates, resolveDuplicates } from './external/g-sheets/base.js';
@@ -75,18 +75,7 @@ app.get('/doxind', async (req, res) => {
 })
 
 app.get("/pind", async (req, res) => {
-  const result = await getIndividualData();
-  const resultWithMeta = {
-    count: result.length,
-    updateAt: new Date(),
-    data: result.slice()
-  }
-  console.log('Saving raw data, just in case...');
-  const jsonData = JSON.stringify(resultWithMeta, null, 4);
-  writeFile('./.data/individuals.json', jsonData)
-    .then(() => {
-      console.log("Downloaded individuals data from google sheets is saved in a file")
-    })
+  const resultWithMeta = await getIndividuals();
   res.status(200).send(resultWithMeta);
 })
 
@@ -133,21 +122,10 @@ app.get("/indpro", async function (request, response) {
 
 
 app.get("/programs", async function (request, response) {
-  const programsRes = await getManualProgramData();
-  if (programsRes.failed) {
+  const programsWithMeta = await getProgramData();
+  if (programsWithMeta.failed) {
     response.status(404).send({ message: 'Failed' });
   } else {
-    const programsWithMeta = {
-      count: Object.keys(programsRes).length,
-      updatedAt: new Date(),
-      data: programsRes
-    }
-    console.log('Saving raw data, just in case...');
-    const jsonData = JSON.stringify(programsWithMeta, null, 4);
-    writeFile('./.data/programs.json', jsonData)
-      .then(() => {
-        console.log("Downloaded programs data from google sheets is saved in a file")
-      })
     response.status(200).send(programsWithMeta);
   }
 })
