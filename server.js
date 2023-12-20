@@ -319,7 +319,7 @@ app.get('/simplify-pubs', (req, res) => {
   const rawDataDownloadStatus = fetchRawPublicationDownloadStatus();
   if (rawDataDownloadStatus.success && !isTimestampWeekAgo(rawDataDownloadStatus.timestamp)) {
     const publications = getRawPublicationData();
-    res.send(saveSimplifiedPublications(publications));
+    res.send(saveSimplifiedPublications(publications, './.data/simplifieddata.json'));
   } else {
     res.send({ message: 'Raw publications data need to be updated! Please request /pubs with necessary authentication!' });
   }

@@ -1,0 +1,2 @@
+### File chunks
+> On free servers when the memory limits are low, this folder maintains chunks of files where each file still valid JSONArray, but a parent script will consolidate all the files into a single larger array

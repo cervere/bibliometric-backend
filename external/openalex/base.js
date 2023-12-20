@@ -10,7 +10,7 @@ const BASE_URL = 'https://api.openalex.org/works';
 const PUBS_PER_PAGE = 200;
 
 const base_filter = {
-  from_publication_date: '2023-01-01',
+  from_publication_date: '2021-01-01',
   country: 'US',
   publication_type: 'journal',
   is_paratext: 'false',
@@ -97,7 +97,37 @@ export const fetchAllPublications = async () => {
   }
 }
 
+class SimplifiedPubs {
+  constructor() {
+    this.publications = [];
+    this.fileCount = 0;
+  }
+
+  add(pubs) {
+    this.publications.push(...pubs);
+    this.writeSimplified();
+  }
+
+  clear() {
+    this.publications = [];
+  }
+
+  write() {
+    console.log("Writing simplifiedpubs file")
+    saveSimplifiedPublications(this.publications, `./.data/pubs/simplifieddata.${this.fileCount}.json`);
+    this.fileCount += 1
+    this.clear();
+  }
+
+  writeSimplified() {
+    if (this.publications.length >= 5000) {
+      this.write();
+    }
+  }
+}
+
 export const fetchAllPublicationsFromSemantic = async () => {
+  const simplifiedPubs = new SimplifiedPubs() // Write in batches of 5000
   const publications = [];
   let totalPubsToFetch = -1;
   let pubCount = 0;
@@ -105,6 +135,7 @@ export const fetchAllPublicationsFromSemantic = async () => {
   try {
     const pubResults = await getPubs();
     publications.push(...pubResults.results);
+    simplifiedPubs.add(pubResults.results);
     pubCount = pubResults.results.length;
     totalPubsToFetch = pubResults.totalPubsToFetch
     nextCursor = pubResults.nextCursor
@@ -116,12 +147,13 @@ export const fetchAllPublicationsFromSemantic = async () => {
   while (nextCursor && pubCount < totalPubsToFetch) {
     const pubResults = await getPubs(nextCursor);
     publications.push(...pubResults.results);
+    simplifiedPubs.add(pubResults.results);
     pubCount += pubResults.results.length;
     totalPubsToFetch = pubResults.totalPubsToFetch
     nextCursor = pubResults.nextCursor;
   }
+  simplifiedPubs.write();
   console.log(`Finished downloading ${pubCount} publications`);
-
   return publications;
 }
 
@@ -147,12 +179,12 @@ export const fetchRawPublicationDownloadStatus = () => {
 }
 
 
-export const saveSimplifiedPublications = async (pubs) => {
+export const saveSimplifiedPublications = async (pubs, filePath) => {
   console.log('Preparing simplified data structure for storage');
   const simplifiedPublications = pubs.map((pub) => simplifyPubStructure(pub));
   const jsonData = JSON.stringify(simplifiedPublications, null, 4);
   try {
-    backupAndWriteFile('./.data/simplifieddata.json', jsonData);
+    backupAndWriteFile(filePath, jsonData);
     // writeFileSync('./.data/simplifieddata.json', jsonData)
     console.log('Writing simplified JSON to file was successful.');
   } catch (err) {
@@ -165,30 +197,28 @@ export const updateBasePublications = () => {
   const saveRawData = false // Ideally, we could save the raw data as received from Sem. Sch. 
   // But the free server Glitch we're using to host, has a memory limit of 512MB. So saving rawdata has been difficult.
   // So this flag can be handled appropriately when there are no memory constraints.
-  fetchAllPublicationsFromSemantic().then((pubs) => {
-    saveSimplifiedPublications(pubs)
-      .then(async () => {
-        await getProgramData();
-        await getIndividuals();
-        writeStatus(true, 'Writing simplified publication data JSON to file was successful.')
-        if (saveRawData) {
-          console.log('Saving raw publication data, just in case...');
-          const jsonData = JSON.stringify(pubs, null, 4);
-          writeFile('./.data/rawdata.json', jsonData)
-            .then(() => {
-              console.log('Writing JSON to file was successful.');
-              writeStatus(true, 'Writing raw data JSON to file was successful.')
-            })
-            .catch((err) => {
-              console.error('Error writing file:', err);
-              writeStatus(false, 'Error writing raw data JSON to file.')
-            });
-        }
-      })
-      .catch((err) => {
-        console.error("Error simplifying data...", err);
-        writeStatus(false, 'Error writing simplified publication data JSON to file.')
-      });
+  fetchAllPublicationsFromSemantic().then(async (pubs) => {
+    // saveSimplifiedPublications(pubs, './.data/simplifieddata.json')
+    // .then(async () => {
+    await getProgramData();
+    await getIndividuals();
+    writeStatus(true, 'Writing simplified publication data JSON to file was successful.')
+    if (saveRawData) {
+      console.log('Saving raw publication data, just in case...');
+      const jsonData = JSON.stringify(pubs, null, 4);
+      writeFile('./.data/rawdata.json', jsonData)
+        .then(() => {
+          console.log('Writing JSON to file was successful.');
+          writeStatus(true, 'Writing raw data JSON to file was successful.')
+        })
+        .catch((err) => {
+          console.error('Error writing file:', err);
+          writeStatus(false, 'Error writing raw data JSON to file.')
+        });
+    }
+  }).catch((err) => {
+    console.error("Error simplifying data...", err);
+    writeStatus(false, 'Error writing simplified publication data JSON to file.')
   });
   return { message: 'Publications download is in progress. Please check back later !!' }
 }
