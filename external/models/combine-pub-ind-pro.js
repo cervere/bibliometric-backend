@@ -2,6 +2,7 @@ import { readFileSync } from 'fs';
 import { getIndividualsWithProgramData } from './individuals-with-programs.js';
 import { splitName } from '../doximity/loadDoximityNames.js';
 import { getDoximityNames } from '../doximity/loadDoximityNames.js';
+import { readJSONFiles } from '../../utils/file-utils.js';
 
 function isAffiliationMatch(educationName, affiliationValue) {
     if (educationName && educationName.trim() !== '') {
@@ -53,8 +54,9 @@ export const isFirstAuthorStudent = (authorFirstEduLevel, authorFirstEstimatedYO
 }
 
 export const combinePublicationsIndividualsAndPrograms = async () => {
-    const simplifiedPubsJSON = readFileSync('./.data/simplifieddata.json', 'utf8');
-    const simplifiedPubs = JSON.parse(simplifiedPubsJSON);
+    const simplifiedPubs = readJSONFiles('./.data/pubs');
+    // const simplifiedPubsJSON = readFileSync('./.data/simplifieddata.json', 'utf8');
+    // const simplifiedPubs = JSON.parse(simplifiedPubsJSON);
 
     const aamcRes = await getIndividualsWithProgramData();
     const indPro = {}
