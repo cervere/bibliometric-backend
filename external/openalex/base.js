@@ -101,6 +101,7 @@ class SimplifiedPubs {
   constructor() {
     this.publications = [];
     this.fileCount = 0;
+    this.MAX_BUFFER_SIZE = 256 * 1048576
   }
 
   add(pubs) {
@@ -109,21 +110,31 @@ class SimplifiedPubs {
   }
 
   clear() {
-    this.publications = [];
+    this.publications.length = 0;
   }
 
   write() {
-    console.log("Writing simplifiedpubs file")
     saveSimplifiedPublications(this.publications, `./.data/pubs/simplifieddata.${this.fileCount}.json`);
     this.fileCount += 1
     this.clear();
   }
 
   writeSimplified() {
-    if (this.publications.length >= 5000) {
-      this.write();
+    if (this.publications.length >= 50) {
+      const elementSize = Buffer.byteLength(JSON.stringify(this.publications), 'utf8');
+      if (this.publications.length >= 1000 || elementSize > this.MAX_BUFFER_SIZE) {
+        this.write();
+      }
     }
   }
+}
+
+const logMemory = () => {
+  const memUsage = process.memoryUsage();
+  const memKeys = Object.keys(memUsage).map((key) => {
+    return `${key}: ${(memUsage[key] / 1024 / 1024).toFixed(2)}MB`
+  })
+  console.log(memKeys.join(','));
 }
 
 export const fetchAllPublicationsFromSemantic = async () => {
@@ -134,7 +145,7 @@ export const fetchAllPublicationsFromSemantic = async () => {
   let nextCursor;
   try {
     const pubResults = await getPubs();
-    publications.push(...pubResults.results);
+    // publications.push(...pubResults.results);
     simplifiedPubs.add(pubResults.results);
     pubCount = pubResults.results.length;
     totalPubsToFetch = pubResults.totalPubsToFetch
@@ -146,7 +157,7 @@ export const fetchAllPublicationsFromSemantic = async () => {
   console.log(`Received a total of ${totalPubsToFetch}`);
   while (nextCursor && pubCount < totalPubsToFetch) {
     const pubResults = await getPubs(nextCursor);
-    publications.push(...pubResults.results);
+    // publications.push(...pubResults.results);
     simplifiedPubs.add(pubResults.results);
     pubCount += pubResults.results.length;
     totalPubsToFetch = pubResults.totalPubsToFetch
@@ -180,42 +191,42 @@ export const fetchRawPublicationDownloadStatus = () => {
 
 
 export const saveSimplifiedPublications = async (pubs, filePath) => {
-  console.log('Preparing simplified data structure for storage');
+  // console.log('Preparing simplified data structure for storage');
   const simplifiedPublications = pubs.map((pub) => simplifyPubStructure(pub));
   const jsonData = JSON.stringify(simplifiedPublications, null, 4);
   try {
     backupAndWriteFile(filePath, jsonData);
     // writeFileSync('./.data/simplifieddata.json', jsonData)
-    console.log('Writing simplified JSON to file was successful.');
+    console.log(`Writing simplified JSON ${filePath} was successful.`);
   } catch (err) {
     console.error('Error writing simplified data:', err);
   };
   return { message: 'Publications simplification is in progress. Please check back later !!' }
 }
 
-export const updateBasePublications = () => {
+export const updateBasePublications = async () => {
   const saveRawData = false // Ideally, we could save the raw data as received from Sem. Sch. 
   // But the free server Glitch we're using to host, has a memory limit of 512MB. So saving rawdata has been difficult.
   // So this flag can be handled appropriately when there are no memory constraints.
+  await getProgramData();
+  await getIndividuals();
   fetchAllPublicationsFromSemantic().then(async (pubs) => {
     // saveSimplifiedPublications(pubs, './.data/simplifieddata.json')
     // .then(async () => {
-    await getProgramData();
-    await getIndividuals();
     writeStatus(true, 'Writing simplified publication data JSON to file was successful.')
-    if (saveRawData) {
-      console.log('Saving raw publication data, just in case...');
-      const jsonData = JSON.stringify(pubs, null, 4);
-      writeFile('./.data/rawdata.json', jsonData)
-        .then(() => {
-          console.log('Writing JSON to file was successful.');
-          writeStatus(true, 'Writing raw data JSON to file was successful.')
-        })
-        .catch((err) => {
-          console.error('Error writing file:', err);
-          writeStatus(false, 'Error writing raw data JSON to file.')
-        });
-    }
+    // if (saveRawData) {
+    //   console.log('Saving raw publication data, just in case...');
+    //   const jsonData = JSON.stringify(pubs, null, 4);
+    //   writeFile('./.data/rawdata.json', jsonData)
+    //     .then(() => {
+    //       console.log('Writing JSON to file was successful.');
+    //       writeStatus(true, 'Writing raw data JSON to file was successful.')
+    //     })
+    //     .catch((err) => {
+    //       console.error('Error writing file:', err);
+    //       writeStatus(false, 'Error writing raw data JSON to file.')
+    //     });
+    // }
   }).catch((err) => {
     console.error("Error simplifying data...", err);
     writeStatus(false, 'Error writing simplified publication data JSON to file.')
