@@ -1,8 +1,8 @@
 import axios from "axios";
+import 'dotenv/config';
 
-// const SHEET_ID = '1oK_n_0iAXckcFlS13Sbs3DPhZiDWXw98DDN8CbNmnHk';
-const SHEET_ID = '1K2JJG6uSl3tdisN4xtBnIHwqUOo5BGWeTH1I0rXF-L8';
-const API_KEY = 'AIzaSyCKYp7lfxQqmLUD065YuziyDSuSm2n2zz0';
+const SHEET_ID = process.env.GSHEET_INDIVIDUALDETAILS_SHEET_ID;
+const API_KEY = process.env.GOOGLE_API_KEY;
 const BASE_URL = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/`;
 
 

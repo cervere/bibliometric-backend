@@ -1,6 +1,8 @@
 import axios from "axios";
 import { writeFileSync } from 'fs';
 import { backupAndWriteFile } from "../../utils/file-utils.js";
+import 'dotenv/config';
+
 
 // Function to get counts by grouping values of a key 'k'
 export function getCountsByGrouping(arr, key) {
@@ -193,9 +195,9 @@ export const getIndividuals = async () => {
 
 // @depricated. check new-base.js
 export const getManualIndividualData = async () => {
-  const SHEET_ID = '1GE0LVl4nXehh8EVK1CSiIAvebAB1ovbIrOIC5vo3k9c';
+  const SHEET_ID = process.env.GSHEET_OLD_INDIVIDUALS_SHEET_ID;
   const DATA_SHEET_NAME = 'all_fac_fel_res'
-  const API_KEY = 'AIzaSyCKYp7lfxQqmLUD065YuziyDSuSm2n2zz0';
+  const API_KEY = process.env.GOOGLE_API_KEY;
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${DATA_SHEET_NAME}`;
 
   const res = await axios.get(url, {
@@ -233,10 +235,8 @@ const getProgramDataObj = (data, getKeyField, keyField) => {
 }
 
 export const getGeneralProgramData = async (DATA_SHEET_NAME, getKeyField, keyField) => {
-  const SHEET_ID_ORIG = '1poacmUT_2TM00nZ8agOIZFP_dILEd_LLoZbqjOkWFqE';
-  const SHEET_ID_TEMP = '1PqgrFDWeL56yjoijkZUtyT26J7n-U7yz8f3tY1EOeYA'; //until the above sheet has THA details and AAMCFREIDA sheet
-  const SHEET_ID = SHEET_ID_TEMP;
-  const API_KEY = 'AIzaSyCKYp7lfxQqmLUD065YuziyDSuSm2n2zz0';
+  const SHEET_ID = process.env.GSHEET_PROGRAMDETAILS_SHEET_ID;
+  const API_KEY = process.env.GOOGLE_API_KEY;
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${DATA_SHEET_NAME}`;
 
   const res = await axios.get(url, {
