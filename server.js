@@ -270,24 +270,27 @@ app.get('/pubs-sample', async (req, res) => {
 app.get('/pub-ind-pro', async (req, res) => {
   console.log('Checking the status of raw publication data download from OpenAlex...');
   const rawPublicationDownloadStatus = await fetchRawPublicationDownloadStatus();
+  const { success, timestamp, downloadInProgress, downloadSettingsHash, publicationsSince } = rawPublicationDownloadStatus;
   const messages = [];
-  const envFileChange = (currentEnvHash !== rawPublicationDownloadStatus.downloadSettingsHash);
+  const envFileChange = (currentEnvHash !== downloadSettingsHash);
   if (envFileChange) {
     messages.push("The data you are viewing may be old. Data download parameters seem to have have changed.");
   }
-  let initiateFreshPublicationDownload = envFileChange;
-  if (rawPublicationDownloadStatus.success && !isTimestampWeekAgo(rawPublicationDownloadStatus.timestamp)) {
+  let initiateFreshPublicationDownload = !downloadInProgress && envFileChange;
+  if (success && !isTimestampWeekAgo(timestamp)) {
     console.log("Publications data recently updated.");
   } else {
-    if (rawPublicationDownloadStatus.success) {
+    if (success) {
       messages.push("Publication data is more than a week old.")
     } else {
       messages.push("Latest publication data download status from OpenAlex was not found!!");
     }
-    initiateFreshPublicationDownload = true;
+    initiateFreshPublicationDownload = !downloadInProgress && true;
   }
   if (initiateFreshPublicationDownload) {
     messages.push("Starting a fresh download now! Please try again in an hour for the most recent data!")
+  } else if (downloadInProgress) {
+    messages.push("A fresh download is in progress! Please try again in an hour for the most recent data!")
   }
 
   /**
@@ -305,22 +308,19 @@ app.get('/pub-ind-pro', async (req, res) => {
     const resultWithMeta = {
       someData: true,
       count: Object.keys(result).length,
-      updateAt: rawPublicationDownloadStatus.success ? new Date(rawPublicationDownloadStatus.timestamp) : new Date(),
+      updateAt: success ? new Date(rawPublicationDownloadStatus.timestamp) : new Date(),
       data: result,
-      message: messages
+      message: messages,
+      publicationsSince
     }
     if (initiateFreshPublicationDownload) {
-      if (rawPublicationDownloadStatus.downloadInProgress) {
-        resultWithMeta.message.push("A fresh download is in progress! Please try again in an hour for the most recent data!")
-      } else {
-        writeStatus(rawPublicationDownloadStatus.success, true, currentEnvHash, messages)
-        updateBasePublications(currentEnvHash);
-      }
+      writeStatus(success, true, currentEnvHash, publicationsSince, messages)
+      updateBasePublications(currentEnvHash);
     }
     res.status(200).send(resultWithMeta);
   } catch (err) {
     console.log(err);
-    writeStatus(rawPublicationDownloadStatus.success, true, currentEnvHash, messages)
+    writeStatus(success, true, currentEnvHash, publicationsSince, messages);
     updateBasePublications(currentEnvHash);
     messages.push("Unexpected error while loading publications. Please inform support and try again later!")
     res.status(404).send({ data: [], message: messages })
