@@ -80,7 +80,7 @@ const getIndividualDataObj = (data) => {
 
     simpleObj['rank_std'] = standardizeRank(simpleObj.rank);
     const middle = simpleObj["middle initial"] ? ` ${simpleObj["middle initial"]} ` : ' '
-    simpleObj['fullname'] = `${simpleObj["first name"]}${middle}${simpleObj["last name"]}`
+    simpleObj['fullName'] = `${simpleObj["first name"]}${middle}${simpleObj["last name"]}`
     const pgyNum = Number(simpleObj["PGY_#"])
     const pgy = (isNaN(pgyNum) || pgyNum > 9) ? -1 : pgyNum;
     simpleObj['PGY_#'] = pgy;
@@ -119,10 +119,11 @@ export const identifyDuplicates = (arr, field) => {
   return { uniqueInds: Object.values(count).filter((k) => k.count === 1), duplicateInds: Object.values(count).filter((k) => k.count > 1) };
 }
 
+// @depricated. check new-base.js
 export const resolveDuplicates = (duplicateEntries) => {
   const duplicatesResolved = duplicateEntries.map((entry) => {
     const { count, entries } = entry
-    const staticKeys = ['first name', 'middle initial', 'last name', 'fullname'];
+    const staticKeys = ['first name', 'middle initial', 'last name', 'fullName'];
     const dynamicKeys = ['program name', 'edu level', 'rank', 'rank_std', 'title', 'PGY_#'];
     const consolidatedEntry = consolidateEntries(entries, staticKeys, dynamicKeys);
     return consolidatedEntry
@@ -190,6 +191,7 @@ export const getIndividuals = async () => {
   return resultWithMeta;
 }
 
+// @depricated. check new-base.js
 export const getManualIndividualData = async () => {
   const SHEET_ID = '1GE0LVl4nXehh8EVK1CSiIAvebAB1ovbIrOIC5vo3k9c';
   const DATA_SHEET_NAME = 'all_fac_fel_res'

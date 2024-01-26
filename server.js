@@ -14,16 +14,15 @@ import {
   fetchAllPublications, isTimestampWeekAgo
 } from './external/openalex/base.js'
 import { getRawPublicationData } from './models/publication.js';
-import { getManualIndividualData, getIndividualData, getManualProgramData } from './external/g-sheets/base.js';
-// we've started you off with Express,
-// but feel free to use whatever libs or frameworks you'd like through `package.json`.
-import { identifyDuplicates, resolveDuplicates } from './external/g-sheets/base.js';
-import { getAAMCProgramData, getResidencyExplorerProgramData } from './external/g-sheets/base.js';
+import { getManualProgramData, identifyDuplicates, getAAMCProgramData, getResidencyExplorerProgramData } from './external/g-sheets/base.js';
 import { combineAAMCandREProgramData, getIndividualsWithProgramData } from './external/models/individuals-with-programs.js';
 import { combinePublicationsIndividualsAndPrograms } from './external/models/combine-pub-ind-pro.js';
 import { getDoximityNames } from './external/doximity/loadDoximityNames.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
+
+import { getManualIndividualData, resolveDuplicates, getIndividualData } from "./external/g-sheets/new-base.js"
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -49,15 +48,12 @@ app.post("/save", function (request, response) {
   response.status(200).send({ 'message': 'Received ' + title });
 });
 
-
-
 app.get("/duplicateInds", async (req, res) => {
   // This service is for debugging
   const { debug } = req.query
   const result = await getManualIndividualData();
-  const individuals = identifyDuplicates(result, 'fullname')
+  const individuals = identifyDuplicates(result, 'fullName')
   const resolvedIndividuals = resolveDuplicates(individuals.duplicateInds);
-  console.log(debug)
   if (debug === '1') {
     const dupes = individuals.duplicateInds.map((entry) => entry.entries);
     dupes.forEach((dupe, i) => dupe.push(resolvedIndividuals[i]))
