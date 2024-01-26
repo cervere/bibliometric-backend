@@ -196,8 +196,8 @@ export const saveSimplifiedPublications = async (pubs, filePath) => {
   const simplifiedPublications = pubs.map((pub) => simplifyPubStructure(pub));
   const jsonData = JSON.stringify(simplifiedPublications, null, 4);
   try {
-    backupAndWriteFile(filePath, jsonData);
-    // writeFileSync('./.data/simplifieddata.json', jsonData)
+    // backupAndWriteFile(filePath, jsonData);
+    writeFileSync(filePath, jsonData)
     console.log(`Writing simplified JSON ${filePath} was successful.`);
   } catch (err) {
     console.error('Error writing simplified data:', err);
