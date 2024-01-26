@@ -214,7 +214,7 @@ export const updateBasePublications = async (downloadSettingsHash) => {
   fetchAllPublicationsFromSemantic().then(async (pubs) => {
     // saveSimplifiedPublications(pubs, './.data/simplifieddata.json')
     // .then(async () => {
-    writeStatus(true, false, downloadSettingsHash, process.env.SEMANTIC_PUBS_START_DATE.split('-')[0], 'Writing simplified publication data JSON to file was successful.')
+    writeStatus(true, false, downloadSettingsHash, Number(process.env.SEMANTIC_PUBS_START_DATE.split('-')[0]), 'Writing simplified publication data JSON to file was successful.')
     // if (saveRawData) {
     //   console.log('Saving raw publication data, just in case...');
     //   const jsonData = JSON.stringify(pubs, null, 4);
@@ -230,7 +230,7 @@ export const updateBasePublications = async (downloadSettingsHash) => {
     // }
   }).catch((err) => {
     console.error("Error simplifying data...", err);
-    writeStatus(false, false, downloadSettingsHash, '', 'Error writing simplified publication data JSON to file.')
+    writeStatus(false, false, downloadSettingsHash, new Date().getFullYear(), 'Error writing simplified publication data JSON to file.')
   });
   return { message: 'Publications download is in progress. Please check back later !!' }
 }
