@@ -1,4 +1,5 @@
 import { readFileSync, writeFileSync, readdir, existsSync, createReadStream, createWriteStream } from 'fs';
+import crypto from 'crypto';
 import path from 'path';
 
 export const backupAndWriteFile = (filePath, data) => {
@@ -39,4 +40,10 @@ export const readJSONFiles = (folderPath) => {
         });
     })
     return globalArray
-} 
+}
+
+// Calculate the hash of a file
+export function calculateHash(filePath) {
+    const fileData = readFileSync(filePath);
+    return crypto.createHash('sha256').update(fileData).digest('hex');
+}

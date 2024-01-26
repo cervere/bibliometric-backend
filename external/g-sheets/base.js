@@ -109,17 +109,7 @@ const estimatedYOG = (pgy) => {
     return -1;
   }
 }
-export const identifyDuplicates = (arr, field) => {
-  const count = arr.reduce((acc, obj) => {
-    const key = obj[field];
-    const entry = acc[key] || { count: 0, entries: [] }
-    entry.count = entry.count + 1;
-    entry.entries.push(obj);
-    acc[key] = entry
-    return acc;
-  }, {});
-  return { uniqueInds: Object.values(count).filter((k) => k.count === 1), duplicateInds: Object.values(count).filter((k) => k.count > 1) };
-}
+
 
 // @depricated. check new-base.js
 export const resolveDuplicates = (duplicateEntries) => {
@@ -170,7 +160,7 @@ function consolidateEntries(arr, staticKeys, dynamicKeys) {
 
 export const getIndividualData = async () => {
   const preparedData = await getManualIndividualData();
-  const individuals = identifyDuplicates(preparedData, 'fullname')
+  const individuals = identifyDuplicates(preparedData, 'fullName')
   const uniqueIndividuals = individuals.uniqueInds.map(({ entries }) => entries[0])
   const resolvedIndividuals = [...uniqueIndividuals]
   const duplicatesResolved = resolveDuplicates(individuals.duplicateInds)

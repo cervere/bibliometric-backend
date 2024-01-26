@@ -1,16 +1,17 @@
 import axios from "axios";
 import { writeFile } from 'fs/promises';
 import { readFileSync, writeFileSync } from 'fs';
+import 'dotenv/config';
 import { collapseIds, collapseAuthorFields, collapseHostVenue, collapseConcepts } from "./utils.js";
-import { getIndividuals, getProgramData } from "../g-sheets/base.js";
+import { getProgramData } from "../g-sheets/base.js";
+import { getIndividuals } from "../g-sheets/new-base.js";
 import { backupAndWriteFile } from "../../utils/file-utils.js";
-
 
 const BASE_URL = 'https://api.openalex.org/works';
 const PUBS_PER_PAGE = 200;
 
 const base_filter = {
-  from_publication_date: '2021-01-01',
+  from_publication_date: process.env.SEMANTIC_PUBS_START_DATE,
   country: 'US',
   publication_type: 'journal',
   is_paratext: 'false',
@@ -204,7 +205,7 @@ export const saveSimplifiedPublications = async (pubs, filePath) => {
   return { message: 'Publications simplification is in progress. Please check back later !!' }
 }
 
-export const updateBasePublications = async () => {
+export const updateBasePublications = async (downloadSettingsHash) => {
   const saveRawData = false // Ideally, we could save the raw data as received from Sem. Sch. 
   // But the free server Glitch we're using to host, has a memory limit of 512MB. So saving rawdata has been difficult.
   // So this flag can be handled appropriately when there are no memory constraints.
@@ -213,7 +214,7 @@ export const updateBasePublications = async () => {
   fetchAllPublicationsFromSemantic().then(async (pubs) => {
     // saveSimplifiedPublications(pubs, './.data/simplifieddata.json')
     // .then(async () => {
-    writeStatus(true, 'Writing simplified publication data JSON to file was successful.')
+    writeStatus(true, false, downloadSettingsHash, 'Writing simplified publication data JSON to file was successful.')
     // if (saveRawData) {
     //   console.log('Saving raw publication data, just in case...');
     //   const jsonData = JSON.stringify(pubs, null, 4);
@@ -229,14 +230,16 @@ export const updateBasePublications = async () => {
     // }
   }).catch((err) => {
     console.error("Error simplifying data...", err);
-    writeStatus(false, 'Error writing simplified publication data JSON to file.')
+    writeStatus(false, false, downloadSettingsHash, 'Error writing simplified publication data JSON to file.')
   });
   return { message: 'Publications download is in progress. Please check back later !!' }
 }
 
-const writeStatus = (success, message) => {
+export const writeStatus = (success, downloadInProgress, downloadSettingsHash, message) => {
   const statusJSON = JSON.stringify({
     success,
+    downloadInProgress,
+    downloadSettingsHash,
     timestamp: new Date().toISOString(),
     message
   }, null, 2);

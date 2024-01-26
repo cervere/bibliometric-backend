@@ -62,10 +62,10 @@ export const combinePublicationsIndividualsAndPrograms = async () => {
     const indPro = {}
 
     aamcRes.forEach((item) => {
-        if (!indPro[item.fullname]) {
-            indPro[item.fullname] = {};
+        if (!indPro[item.fullName]) {
+            indPro[item.fullName] = {};
         }
-        indPro[item.fullname] = { ...item }
+        indPro[item.fullName] = { ...item }
     });
 
     const pubsIndPro = {}
@@ -87,7 +87,7 @@ export const combinePublicationsIndividualsAndPrograms = async () => {
                     faProgramData['affiliation_match'] = affMatch;
                     faProgramData['affiliation_loose_match'] = affLooseMatch;
                     const faProgramDataMod = modifyObjectKeys(faProgramData, 'author_first');
-                    const first_author_student = isFirstAuthorStudent(faProgramData['edu level'], faProgramData['estimatedYOG'], publication_date)
+                    const first_author_student = isFirstAuthorStudent(faProgramData['eduLevel'], faProgramData['estimatedYOG'], publication_date)
                     author_program_data = { ...faProgramDataMod, first_author_student }
                 }
                 if (!author_first_edu_level) {

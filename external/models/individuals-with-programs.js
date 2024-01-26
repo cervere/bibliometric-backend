@@ -1,10 +1,10 @@
 import { readFileSync } from 'fs';
-import {getAAMCProgramData, getResidencyExplorerProgramData} from '../g-sheets/base.js';
+import { getAAMCProgramData, getResidencyExplorerProgramData } from '../g-sheets/base.js';
 
 export const getIndividualsWithProgramData = async () => {
     const individualsMetaStr = readFileSync('./.data/individuals.json');
     const individualsMeta = JSON.parse(individualsMetaStr)
-    console.log(`Loaded ${individualsMeta?.count} individuals`)
+    console.log(`Loaded ${individualsMeta?.data?.length} individuals`)
     const programsMetaStr = readFileSync('./.data/programs.json');
     const programsMeta = JSON.parse(programsMetaStr);
     console.log(`Loaded ${programsMeta?.count} programs`);
@@ -13,11 +13,11 @@ export const getIndividualsWithProgramData = async () => {
     const programsAAMCandRE = await combineAAMCandREProgramData();
 
     const individuals = individualsMeta.data;
-    
+
     const individualsWithProgramData = individuals.map((individual) => {
-        const indProgramName = individual['program name']; // might contain | when resolving duplicates
-        const programData = Object.values(programsAAMCandRE).find((program) => indProgramName.indexOf(program?.ama_program_name) > -1) 
-        
+        const indProgramName = individual['programName']; // might contain | when resolving duplicates
+        const programData = Object.values(programsAAMCandRE).find((program) => indProgramName.indexOf(program?.ama_program_name) > -1)
+
         return {
             ...individual,
             ...programData
@@ -56,5 +56,5 @@ export const combineAAMCandREProgramData = async () => {
         }
     })
 
-    return programsAAMCandRE; 
+    return programsAAMCandRE;
 }

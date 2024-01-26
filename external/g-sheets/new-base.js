@@ -1,5 +1,8 @@
 import axios from "axios";
 import 'dotenv/config';
+import { writeFileSync } from 'fs';
+import { backupAndWriteFile } from "../../utils/file-utils.js";
+import { identifyDuplicates } from "../../utils/object-utils.js";
 
 const SHEET_ID = process.env.GSHEET_INDIVIDUALDETAILS_SHEET_ID;
 const API_KEY = process.env.GOOGLE_API_KEY;
@@ -280,10 +283,25 @@ const maxString = (str1, str2, mapping) => {
 
 export const getIndividualData = async () => {
     const preparedData = await getManualIndividualData();
-    const individuals = identifyDuplicates(preparedData, 'fullname')
-    const uniqueIndividuals = individuals.uniqueInds.map(({ entries }) => entries[0])
+    const individuals = identifyDuplicates(preparedData, 'fullName')
+    const uniqueIndividuals = individuals.unique.map(({ entries }) => entries[0])
     const resolvedIndividuals = [...uniqueIndividuals]
-    const duplicatesResolved = resolveDuplicates(individuals.duplicateInds)
+    const duplicatesResolved = resolveDuplicates(individuals.duplicate)
     resolvedIndividuals.push(...duplicatesResolved);
     return resolvedIndividuals;
+}
+
+export const getIndividuals = async () => {
+    const result = await getIndividualData();
+    const resultWithMeta = {
+        count: result.length,
+        updateAt: new Date(),
+        data: result.slice()
+    }
+    console.log('Saving raw individual data, just in case...');
+    const jsonData = JSON.stringify(resultWithMeta, null, 4);
+    // writeFileSync('./.data/individuals.json', jsonData);
+    backupAndWriteFile('./.data/individuals.json', jsonData);
+    console.log("Downloaded individuals data from google sheets is saved in a file")
+    return resultWithMeta;
 }

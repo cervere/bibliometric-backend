@@ -11,10 +11,11 @@ import { writeFile } from 'fs/promises';
 
 import {
   updateBasePublications, fetchRawPublicationDownloadStatus, saveSimplifiedPublications,
-  fetchAllPublications, isTimestampWeekAgo
+  fetchAllPublications, isTimestampWeekAgo, writeStatus
 } from './external/openalex/base.js'
 import { getRawPublicationData } from './models/publication.js';
-import { getManualProgramData, identifyDuplicates, getAAMCProgramData, getResidencyExplorerProgramData } from './external/g-sheets/base.js';
+import { getManualProgramData, getAAMCProgramData, getResidencyExplorerProgramData } from './external/g-sheets/base.js';
+import { identifyDuplicates } from "./utils/object-utils.js";
 import { combineAAMCandREProgramData, getIndividualsWithProgramData } from './external/models/individuals-with-programs.js';
 import { combinePublicationsIndividualsAndPrograms } from './external/models/combine-pub-ind-pro.js';
 import { getDoximityNames } from './external/doximity/loadDoximityNames.js';
@@ -22,9 +23,13 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 import { getManualIndividualData, resolveDuplicates, getIndividualData } from "./external/g-sheets/new-base.js"
+import { calculateHash } from "./utils/file-utils.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+console.log('Checking if environment variables changed...');
+const currentEnvHash = calculateHash('.env');
 
 // http://expressjs.com/en/starter/static-files.html
 app.use(cors());
@@ -52,10 +57,10 @@ app.get("/duplicateInds", async (req, res) => {
   // This service is for debugging
   const { debug } = req.query
   const result = await getManualIndividualData();
-  const individuals = identifyDuplicates(result, 'fullName')
-  const resolvedIndividuals = resolveDuplicates(individuals.duplicateInds);
+  const individuals = identifyDuplicates(result, 'fullName');
+  const resolvedIndividuals = resolveDuplicates(individuals.duplicate);
   if (debug === '1') {
-    const dupes = individuals.duplicateInds.map((entry) => entry.entries);
+    const dupes = individuals.duplicate.map((entry) => entry.entries);
     dupes.forEach((dupe, i) => dupe.push(resolvedIndividuals[i]))
     res.status(200).send(dupes);
   } else {
@@ -266,7 +271,11 @@ app.get('/pub-ind-pro', async (req, res) => {
   console.log('Checking the status of raw publication data download from OpenAlex...');
   const rawPublicationDownloadStatus = await fetchRawPublicationDownloadStatus();
   const messages = [];
-  let initiateFreshPublicationDownload = false;
+  const envFileChange = (currentEnvHash !== rawPublicationDownloadStatus.downloadSettingsHash);
+  if (envFileChange) {
+    messages.push("The data you are viewing may be old. Data download parameters seem to have have changed.");
+  }
+  let initiateFreshPublicationDownload = envFileChange;
   if (rawPublicationDownloadStatus.success && !isTimestampWeekAgo(rawPublicationDownloadStatus.timestamp)) {
     console.log("Publications data recently updated.");
   } else {
@@ -276,6 +285,8 @@ app.get('/pub-ind-pro', async (req, res) => {
       messages.push("Latest publication data download status from OpenAlex was not found!!");
     }
     initiateFreshPublicationDownload = true;
+  }
+  if (initiateFreshPublicationDownload) {
     messages.push("Starting a fresh download now! Please try again in an hour for the most recent data!")
   }
 
@@ -299,14 +310,20 @@ app.get('/pub-ind-pro', async (req, res) => {
       message: messages
     }
     if (initiateFreshPublicationDownload) {
-      updateBasePublications();
+      if (rawPublicationDownloadStatus.downloadInProgress) {
+        resultWithMeta.message.push("A fresh download is in progress! Please try again in an hour for the most recent data!")
+      } else {
+        writeStatus(rawPublicationDownloadStatus.success, true, currentEnvHash, messages)
+        updateBasePublications(currentEnvHash);
+      }
     }
     res.status(200).send(resultWithMeta);
   } catch (err) {
     console.log(err);
-    updateBasePublications();
+    writeStatus(rawPublicationDownloadStatus.success, true, currentEnvHash, messages)
+    updateBasePublications(currentEnvHash);
     messages.push("Unexpected error while loading publications. Please inform support and try again later!")
-    res.status(404).send({ message: messages })
+    res.status(404).send({ data: [], message: messages })
   }
 
 })
