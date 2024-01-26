@@ -8,7 +8,7 @@ import { getIndividuals } from "../g-sheets/new-base.js";
 import { backupAndWriteFile } from "../../utils/file-utils.js";
 
 const BASE_URL = 'https://api.openalex.org/works';
-const PUBS_PER_PAGE = 200;
+const PUBS_PER_PAGE = process.env.SEMANTIC_PUBS_PER_PAGE;
 
 const base_filter = {
   from_publication_date: process.env.SEMANTIC_PUBS_START_DATE,

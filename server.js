@@ -328,6 +328,14 @@ app.get('/pub-ind-pro', async (req, res) => {
 
 })
 
+app.get('/reset-download', async (req, res) => {
+  console.log('Resetting downloadInProgress to false!');
+  const rawPublicationDownloadStatus = await fetchRawPublicationDownloadStatus();
+  const { success, timestamp, downloadInProgress, downloadSettingsHash, publicationsSince, message } = rawPublicationDownloadStatus;
+  writeStatus(success, false, currentEnvHash, publicationsSince, message);
+  res.status(200).send({ message: "Successfully set download progress to false. Please use other services as usual. A download will be triggered if needed!" })
+})
+
 app.get('/simplify-pubs', (req, res) => {
   const rawDataDownloadStatus = fetchRawPublicationDownloadStatus();
   if (rawDataDownloadStatus.success && !isTimestampWeekAgo(rawDataDownloadStatus.timestamp)) {
